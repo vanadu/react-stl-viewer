@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import model1 from './model1.stl';
+import model1 from './assets/model3.stl';
 import * as THREE from 'three';
 // !VA GridHelper is now in Three core, I guess, since the import is not accessed.
 // import { GridHelper } from 'three/src/helpers/GridHelper.js';
@@ -22,9 +22,9 @@ let bbox;
 
 class STLViewer extends Component {
   componentDidMount() {
+      this.addSTLObject();
       this.sceneSetup();
       this.addCustomSceneObjects();
-      this.addSTLObject();
       this.startAnimationLoop();
       window.addEventListener('resize', this.handleWindowResize);
   }
@@ -35,11 +35,62 @@ class STLViewer extends Component {
       this.controls.dispose();
   }
 
+
+  addSTLObject = () => {
+
+    const loader = new STLLoader();
+    const promise = loader.loadAsync(model1);
+    promise.then( ( geometry ) => {
+
+      const material = new THREE.MeshPhongMaterial( { color: 0x007fff, specular: 0x111111, shininess: 100, fog: false } );
+      const mesh = new THREE.Mesh( geometry, material );
+      // !VA Cener the mesh geometry in the scene.
+      geometry.center();
+      mesh.geometry.computeBoundingBox();
+      bbox = mesh.geometry.boundingBox;
+      console.log('bbox :>> ');
+      console.log(bbox);
+      // console.log(`bbox.max.y :>> ${bbox.max.y};`)
+      // !VA Takes rotation values in radians, so convert, see function at top of main closure
+      // !VA Rotate model so it is standing upright. No, do not rotate it because that would skew all the subsequent calcs. Instead, re-output the STL to be in the proper orientation natively.
+      // mesh.rotation.x = deg2rad(270);
+      // !VA We do not need to set the rotation because the defaults are 0.
+      // mesh.rotation.x = 0;
+      // mesh.rotation.y = 0;
+      // mesh.rotation.z =0;
+      // console.log('mesh.rotation :>> ');
+      // console.log(mesh.rotation);
+      // mesh.position.set( 0, - 0.25, 0.6 );
+      // !VA Position is set so that the model lays on the grid. This raises the position to the model height/2, i.e. the y-value of the bounding box, which is centered on the grid by default
+      mesh.position.set( 0, bbox.max.y, 0 );
+      // !VA Rotation, the original is commented
+      // mesh.rotation.set( 0, - Math.PI / 2, 0 );
+      // mesh.rotation.set( 0, 0, 0 );
+      // !VA Trying to manipulate, the original is commented
+      // mesh.scale.set( 0.5, 0.5, 0.5 );
+      // mesh.scale.set( 0.25, 0.25, 0.25 );
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      this.scene.add(mesh);
+      
+      // !VA Set the camera.position and controls.target relative to the bounding box values. For now, the camera position is set to be 3X as far away as the dimension of the bounding box except for the z axis, which is 10 times away, since the max-z is now only 12.5 since I rotated the native model orientation. We need a better formula for that. controls.target points the camera at the 3D position, in this case, halfway up the height of the STL model.
+      this.camera.position.set(bbox.max.x * 3, bbox.max.y * 3, bbox.max.z * 10); 
+      this.controls.target = new THREE.Vector3(0, bbox.max.y, 0);
+      // !VA controls.update() appears to set the camera position to the controls.target
+      this.controls.update();
+
+    }).catch(failureCallback);
+    
+    function failureCallback(){
+      console.log('Could not load STL file!');
+    }
+  }
+
+
+
   // Standard scene setup in Three.js. Check "Creating a scene" manual for more information
   // https://threejs.org/docs/#manual/en/introduction/Creating-a-scene
   sceneSetup = () => {
-
-
 
       // get container dimensions and use them for scene sizing
       const width = this.mount.clientWidth;
@@ -69,79 +120,29 @@ class STLViewer extends Component {
 
 
 
-      this.camera = new THREE.PerspectiveCamera(
-          fov, // fov = field of view
-          aspect, // aspect ratio
-          near, // near plane
-          far // far plane
-      );
+      this.camera = new THREE.PerspectiveCamera( fov, aspect, near, far);
       // !VA Deleted below
       // this.camera.position.z = 9; // is used here to set some distance from a cube that is located at z = 0
       // OrbitControls allow a camera to orbit around the object
       // https://threejs.org/docs/#examples/controls/OrbitControls
 
-      // !VA 
-      this.camera.position.set(12.5 * 3, 12.5 * 3, 40 * 3);
+
       // this.camera.position.set(0, 0, 12.5 * 3);
       // this.camera.lookAt(new THREE.Vector3(0,22,0));
       // this.controls.update();
 
       this.controls = new OrbitControls( this.camera, this.mount);
-      this.controls.target = new THREE.Vector3(0, 44, 0);
-      // !VA controls.update() appears to set the camera position to the controls.target
-      this.controls.update();
 
 
       // this.controls.target = ( 0, 44, 0);
       this.renderer = new THREE.WebGLRenderer();
       this.renderer.setSize( width, height );
       this.mount.appendChild( this.renderer.domElement ); // mount using React ref
+      console.log('Mark1');
+
   };
 
-  addSTLObject = () => {
 
-
-    // let bbox;
-
-    const loader = new STLLoader();
-    const promise = loader.loadAsync(model1);
-    promise.then( ( geometry ) => {
-      const material = new THREE.MeshPhongMaterial( { color: 0x007fff, specular: 0x111111, shininess: 100, fog: false } );
-      const mesh = new THREE.Mesh( geometry, material );
-      // !VA Cener the mesh geometry in the scene.
-      geometry.center();
-      mesh.geometry.computeBoundingBox();
-      bbox = mesh.geometry.boundingBox;
-      // console.log('bbox :>> ');
-      // console.log(bbox);
-      // console.log(`bbox.max.y :>> ${bbox.max.y};`)
-      // !VA Takes rotation values in radians, so convert, see function at top of main closure
-      // !VA Rotate model so it is standing upright.
-      mesh.rotation.x = deg2rad(270);
-      // mesh.rotation.x = 0;
-      mesh.rotation.y = 0;
-      mesh.rotation.z =0;
-      // console.log('mesh.rotation :>> ');
-      // console.log(mesh.rotation);
-      // mesh.position.set( 0, - 0.25, 0.6 );
-      mesh.position.set( 0, bbox.max.z, 0 );
-      // !VA Rotation, the original is commented
-      // mesh.rotation.set( 0, - Math.PI / 2, 0 );
-      // mesh.rotation.set( 0, 0, 0 );
-      // !VA Trying to manipulate, the original is commented
-      // mesh.scale.set( 0.5, 0.5, 0.5 );
-      // mesh.scale.set( 0.25, 0.25, 0.25 );
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      this.scene.add( mesh );
-      console.log('STL file loaded!');
-    }).catch(failureCallback);
-    
-    function failureCallback(){
-      console.log('Could not load STL file!');
-    }
-    return bbox;
-  }
 
   
   // Here should come custom code.
@@ -218,36 +219,16 @@ class STLViewer extends Component {
   render() {
       return (
       <div style={style} ref={ref => (this.mount = ref)}>
-          <div>
-            STL Viewer
-          </div>
-          <div>{/* <Container /> */}</div>
-
+        <div>
+          STL Viewer
+        </div>
       </div>
 
       );
   }
 }
 
-class Container extends React.Component {
-  state = {isMounted: true};
 
-  render() {
-      const {isMounted = true} = this.state;
-      return (
-          <>
-              <button onClick={() => this.setState(state => ({isMounted: !state.isMounted}))}>
-                  {isMounted ? "Unmount" : "Mount"}
-              </button>
-              {isMounted && <STLViewer />}
-              {isMounted && <div>Scroll to zoom, drag to rotate</div>}
-          </>
-      )
-  }
-}
-
-// const rootElement = document.getElementById("root");
-// ReactDOM.render(<Container />, rootElement);
 
 export default STLViewer;
 
