@@ -1,10 +1,12 @@
 import React, { Component } from "react";
-import model1 from './assets/model3.stl';
+import Model from '../assets/model1.stl';
 import * as THREE from 'three';
 // !VA GridHelper is now in Three core, I guess, since the import is not accessed.
 // import { GridHelper } from 'three/src/helpers/GridHelper.js';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
 import {OrbitControls} from "three/examples/jsm/controls/OrbitControls";
+
+// !VA Using this example: https://codesandbox.io/s/github/supromikali/react-three-demo?file=/src/index.js:0-4455
 
 // !VA Set the width/height to 16:9
 const height = 500;
@@ -17,11 +19,17 @@ const style = {
 
 
 // !VA Convert degrees to radians
-const deg2rad = (deg) => deg * (Math.PI/180);
+// const deg2rad = (deg) => deg * (Math.PI/180);
 let bbox;
 
 class STLViewer extends Component {
+
+  state = { model: Model };
+
+
   componentDidMount() {
+    console.log('this.state :>> ');
+    console.log(this.state);
       this.addSTLObject();
       this.sceneSetup();
       this.addCustomSceneObjects();
@@ -39,9 +47,10 @@ class STLViewer extends Component {
   addSTLObject = () => {
 
     const loader = new STLLoader();
-    const promise = loader.loadAsync(model1);
+    const promise = loader.loadAsync(Model);
     promise.then( ( geometry ) => {
-
+      console.log('geometry :>> ');
+      console.log(geometry);
       const material = new THREE.MeshPhongMaterial( { color: 0x007fff, specular: 0x111111, shininess: 100, fog: false } );
       const mesh = new THREE.Mesh( geometry, material );
       // !VA Cener the mesh geometry in the scene.
@@ -107,10 +116,6 @@ class STLViewer extends Component {
       const fov = 45;
       // !VA This results in object elongation, I don't know why it does that here but not in the original non-React STL viewer.
       // const aspect = 2;  // the canvas default
-      console.log('width :>> ');
-      console.log(width);
-      console.log('height :>> ');
-      console.log(height);
       const aspect = width/height;
       const near = 0.1;
       // // !VA Changing 5 to 100. Nothing happens until you change camera.position
@@ -138,7 +143,6 @@ class STLViewer extends Component {
       this.renderer = new THREE.WebGLRenderer();
       this.renderer.setSize( width, height );
       this.mount.appendChild( this.renderer.domElement ); // mount using React ref
-      console.log('Mark1');
 
   };
 
@@ -218,12 +222,11 @@ class STLViewer extends Component {
 
   render() {
       return (
-      <div style={style} ref={ref => (this.mount = ref)}>
-        <div>
-          STL Viewer
-        </div>
+      <div 
+        style={style} 
+        ref={ref => (this.mount = ref)}
+        >
       </div>
-
       );
   }
 }
