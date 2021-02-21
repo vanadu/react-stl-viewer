@@ -26,21 +26,17 @@ let scene;
 
 
 class Scene extends Component {
-  // constructor(props) {
-  //   super(props);
-
-  // }
-  
 
   // !VA Originally in the Container component, pertains to the Unmount button
-  state = {isMounted: true, scene: null};
+  state = {isMounted: true, scene: null };
 
   componentDidMount() {
 
       // this.addSTLObject();
-      const scene = this.sceneSetup();
-      this.scene = scene;
-      this.setState({scene: this.scene})
+      // !VA Get the scene and controls from sceneSetup and destructure
+      const [ scene, controls ] = this.sceneSetup();
+      // this.scene = scene;
+      this.setState({scene: scene, controls: controls})
       this.addCustomSceneObjects();
       this.startAnimationLoop();
       window.addEventListener('resize', this.handleWindowResize);
@@ -78,7 +74,7 @@ class Scene extends Component {
       this.renderer = new THREE.WebGLRenderer();
       this.renderer.setSize( width, height );
       this.mount.appendChild( this.renderer.domElement ); // mount using React ref
-      return this.scene;
+      return [this.scene, this.controls];
   };
 
   // Here should come custom code.
@@ -157,7 +153,7 @@ class Scene extends Component {
       return (
 
         <div>
-          <Model scene={this.state.scene}/>
+          <Model scene={this.state.scene} controls={this.state.controls} />
           <div 
             style={style} 
             ref={ref => (this.mount = ref)}

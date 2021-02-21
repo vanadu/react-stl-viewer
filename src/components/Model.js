@@ -13,6 +13,7 @@ const Model = (props) => {
   console.log(props);
   let bbox;
   const scene = props.scene;
+  const controls = props.controls;
   console.log('HERE scene :>> ');
   console.log(scene);
 
