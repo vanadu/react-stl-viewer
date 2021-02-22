@@ -4,80 +4,64 @@ import * as THREE from 'three';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
 import {OrbitControls} from "three/examples/jsm/controls/OrbitControls";
 import Scene from './Scene';
-import { MeshBasicMaterial } from "three";
 
 
-
+// !VA This uses the React rendering example at https://codesandbox.io/s/github/supromikali/react-three-demo?file=/src/index.js:0-4455 to get the STL rendered, with mods I made to replace the basic Box in the example with the STL. For the camera positioning, I used Alex Khoroshylov's example here https://stackoverflow.com/questions/14614252/how-to-fit-camera-to-object/14614736#14614736 and the working demo here https://jsfiddle.net/mmalex/h7wzvbkt/ to set the initial camera position based on the boundingSphere of the model and the height of the STL mesh. NOTE: All of the provided code is required for it to work as expected, I removed all the extraneous lines.
 const Model = (props) => {
 
-  // console.log('TOP OF MODEL props :>> ');
-  // console.log(props);
-  let bbox;
+  // !VA Get the THREE scene objects which are set to state in the Scene component
   const scene = props.scene;
   const controls = props.controls;
   const camera = props.camera;
   const model = props.model;
-
+  // !VA The STL object loads, but still outputs the error message, I haven't figured out why. There is probably something wrong with the function structure so that the catch is called as a parameter, not as a callback. Need to look into that soon.
   function addSTLObject()  {
-    // console.log('this.props.message Mark3 :>> ');
-    // console.log(this.props.message);
     const loader = new STLLoader();
     const promise = loader.loadAsync(model);
     promise.then( ( geometry ) => {
-      // console.log('geometry :>> ');
-      // console.log(geometry);
-      const material = new THREE.MeshPhongMaterial( { color: 0x007fff, specular: 0x111111, shininess: 100, fog: false } );
-      const mesh = new THREE.Mesh( geometry, material );
-      // !VA Cener the mesh geometry in the scene.
+      const stlmaterial = new THREE.MeshPhongMaterial( { color: 0x007fff, specular: 0x111111, shininess: 100, fog: false } );
+      const stl = new THREE.Mesh( geometry, stlmaterial );
+      // !VA Center the stl geometry in the scene. Required.
       geometry.center();
-      mesh.geometry.computeBoundingBox();
-      mesh.geometry.computeBoundingSphere();
-      let bbox = mesh.geometry.boundingBox;
-      mesh.position.set( 0, bbox.max.y, 0 );
-      console.log('NOW mesh.position :>> ');
-      console.log(mesh.position);
+      // !VA Get the STL model's bounding box. Required for positioning it in 3D space. 
+      stl.geometry.computeBoundingBox();
+      // !VA Get the STL model's boundingSphere. Required for sizing the Sphere object used for calculating the initial camera position. 
+      stl.geometry.computeBoundingSphere();
+      // !VA get the bounding box of the stl mesh
+      let stlbox = stl.geometry.boundingBox;
+      // !VA Set the initial position of the stl mesh to set its Y position to half its height. This sets its lowest point on the grid plane.
+      stl.position.set( 0, stlbox.max.y, 0 );
 
-
-      // !VA Branch: 022121 from Alex's example
-      // const camera = new THREE.PerspectiveCamera(54, window.innerWidth / window.innerHeight, 0.1, 1000);
-      // camera.position.x = 15;
-      // camera.position.y = 15;
-      // camera.position.z = 15;
-      // camera.lookAt(0, 0, 0);
-
-      var geometry2 = new THREE.SphereGeometry(mesh.geometry.boundingSphere.radius, 32, 32);
-      var material2 = new THREE.MeshBasicMaterial({
+      // // !VA This is where we used to set the camera position. That has been replaced by the zoomExtents function, but I'm leaving the original code commented here for posterity.
+      // camera.position.set(stlbox.max.x * 3, stlbox.max.y * 3, stlbox.max.z * 10); 
+      // controls.target = new THREE.Vector3(0, stlbox.max.y, 0);
+      // controls.update();
+      // !VA Put a shadow on the STL model
+      stl.castShadow = true;
+      stl.receiveShadow = true;
+      // !VA If the Model component doesn't get the scene from the Scene component, the rest will fail silently, so add the error condition. This should be a try/catch. 
+      if (scene) {
+        scene.add(stl);
+      } else {
+        console.log('Scene does not exist');
+      }
+      
+      // !VA Add a bounding sphere around the STL model to use with zoomExtents. The sphere and its material (otherwise it appears with the default opaque material) are required, but set the opacity to 0 to hide it.
+      var geometry2 = new THREE.SphereGeometry(stl.geometry.boundingSphere.radius, 32, 32);
+      console.log('HERE');
+      var spherematerial = new THREE.MeshBasicMaterial({
         color: 0xffff00
       });
-      material2.transparent = true;
-      material2.opacity = 0.35;
-      var sphere = new THREE.Mesh(geometry2, material2);
+      spherematerial.transparent = true;
+      // spherematerial.opacity = 0.35;
+      spherematerial.opacity = 0;
+      var sphere = new THREE.Mesh(geometry2, spherematerial);
       sphere.name = 'Sphere';
-      sphere.position.y = bbox.max.y;
+      // !VA Set the sphere, as with the STL mesh, half the height of the STL mesh vertically off the grid
+      sphere.position.y = stlbox.max.y;
       scene.add(sphere);
-
-      
-
-
-
-      // // !VA Set the camera.position and controls.target relative to the bounding box values. For now, the camera position is set to be 3X as far away as the dimension of the bounding box except for the z axis, which is 10 times away, since the max-z is now only 12.5 since I rotated the native model orientation. We need a better formula for that. controls.target points the camera at the 3D position, in this case, halfway up the height of the STL model.
-
-
-      // !VA Branch: 022121
-      // camera.position.set(bbox.max.x * 3, bbox.max.y * 3, bbox.max.z * 10); 
-      // controls.target = new THREE.Vector3(0, bbox.max.y, 0);
-      // controls.update();
-      // !VA Branch: 022121
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      // !VA Since this function runs twice - the first time scene is null, the second time it gets the value from the Scene component and renders. Not sure why
-      scene.add(mesh);
-
-
-      // zoomExtents( camera, MeshBasicMaterial, controls);
-
-      console.log('FINAL camera.position :>> ');
-      console.log(camera.position);
+      // !VA Run zoomExtents to position the camera based on the STL model's bounding sphere
+      zoomExtents(camera, sphere, controls, stlbox);
 
     }).catch(failureCallback);
     
@@ -86,70 +70,50 @@ const Model = (props) => {
     }
   }
 
-
   addSTLObject();
 
-  function zoomExtents(camera, object1, controls) {
+  function zoomExtents(camera, sphere, controls, stlbox) {
     console.log('zoomExtents running');
-    console.log('object1 :>> ');
-    console.log(object1);
-
+    // !VA These are the calcs provided by Alex Khoroshylov
     let vFoV = camera.getEffectiveFOV();
     let hFoV = camera.fov * camera.aspect;
-  
     let FoV = Math.min(vFoV, hFoV);
-    // !VA 
     let FoV2 = FoV / 2;
-    // let FoV2 = FoV;
 
     let dir = new THREE.Vector3();
     camera.getWorldDirection(dir);
-    let bb = object1.geometry.boundingBox;
-    object1.geometry.computeBoundingSphere();
-    let bs = object1.geometry.boundingSphere;
+    let cameraDir = new THREE.Vector3();
+    camera.getWorldDirection(cameraDir);
+    sphere.geometry.computeBoundingSphere();
+    let bs = sphere.geometry.boundingSphere;
     let bsWorld = bs.center.clone();
-    object1.localToWorld(bsWorld);
-  
+    
+    sphere.localToWorld(bsWorld);
+
     let th = FoV2 * Math.PI / 180.0;
     let sina = Math.sin(th);
     let R = bs.radius;
     let FL = R / sina;
-  
-    let cameraDir = new THREE.Vector3();
-    camera.getWorldDirection(cameraDir);
-  
+
     let cameraOffs = cameraDir.clone();
     cameraOffs.multiplyScalar(-FL);
-    console.log('cameraOffs :>> ');
-    console.log(cameraOffs);
-    // !VA 
-    cameraOffs.x = cameraOffs.x + 1000; 
-    cameraOffs.y = cameraOffs.y + 1000; 
-    cameraOffs.z = cameraOffs.z + 1000; 
 
-    console.log('NEW cameraOffs :>> ');
-    console.log(cameraOffs);
+    // !VA Add the height of the STL mesh to the camera's Z offset to draw the camera back a tad.
+    cameraOffs.z = cameraOffs.z + stlbox.max.y;
+    // !VA Set the camera position to the offset position above.
     let newCameraPos = bsWorld.clone().add(cameraOffs);
-  
+    // !VA Set the camera position
     camera.position.copy(newCameraPos);
-    console.log('NOW camera.position :>> ');
-    console.log(camera.position);
+    // !VA Move the world coordinates of the boundingSphere up accordingly. These will be the coordinates passed to lookAt to make sure the initial camera view angle matches the orbit target.
+    bsWorld.y = stlbox.max.y;
+    // !VA Set the camera lookAt to the boundingSphere world coordinates above
     camera.lookAt(bsWorld);
-    console.log('NOW camera.position :>> ');
-    console.log(camera.position);
+    // !VA Copy the lookAt coordinates above to the Orbit controls target so both the camera and the orbit controls are looking at the same point. 
     controls.target.copy(bsWorld);
-    controls.target.y = controls.target.y + bbox.max.y;
-    console.log('controls.target :>> ');
-    console.log(controls.target);
-  
-    controls.update();
-    console.log('camera.position :>> ');
-    console.log(camera.position);
-    console.log('zoomExtents FINISHED');
+    // !VA Update the orbit and camera controls.
+    controls.target.update();
+    camera.position.update();
   }
-
-
-
 
   return (
     <div>
