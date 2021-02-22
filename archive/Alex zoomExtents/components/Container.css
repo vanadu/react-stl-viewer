@@ -1,0 +1,22 @@
+.segment {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+/* <div className="ui segment" style={{width: '950px', display: 'flex', flexDirection: 'rows', justifyContent: 'center'}}> */
+.card {
+  width: 930px !important;
+  padding: 20px !important;
+}
+
+.btn {
+  width: 200px;
+}
+
+.caption {
+  border: 0 !important;
+  padding: 0 !important;
+}
