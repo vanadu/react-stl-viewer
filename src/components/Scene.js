@@ -28,27 +28,45 @@ let bbox;
 let scene;
 let canvas;
 
+let foo;
+
 
 class Scene extends Component {
-
+  
 
 
   // !VA Originally in the Container component, pertains to the Unmount button
   // state = {isMounted: true, scene: null, camera: null, controls: null, model: 'init', stl: null };
   state = {isMounted: true };
+
+  
   
   componentDidMount() {
     // this.addSTLObject();
     // !VA Get the scene and controls from sceneSetup and destructure
     this.sceneSetup();
+
+
     // !VA The commented lines below were required for the separate Model component
     // const [ scene, camera, controls ] = this.sceneSetup();
     // this.setState({scene: scene, camera: camera, controls: controls, model: this.props.model });
     // this.setState({scene: scene, camera: camera, controls: controls });
-    this.addSTLObject();
-    this.addCustomSceneObjects();
-    this.startAnimationLoop();
+    // this.addSTLObject(this.scene);
+    // console.log('this.scene :>> ');
+    // console.log(this.scene);
+
+    // console.log('this.camera :>> ');
+    // console.log(this.camera);
+    // console.log('this.controls :>> ');
+    // console.log(this.controls);
+    this.addCustomSceneObjects(this.scene);
+
+    this.showStatus();
+    this.startAnimationLoop(this.scene, this.camera);
     window.addEventListener('resize', this.handleWindowResize);
+    
+
+
 
   }
 
@@ -63,44 +81,44 @@ class Scene extends Component {
   // Standard scene setup in Three.js. Check "Creating a scene" manual for more information
   // https://threejs.org/docs/#manual/en/introduction/Creating-a-scene
   sceneSetup = () => {
-      // get container dimensions and use them for scene sizing
-      // !VA Branch: 022221
-      // !VA Overriding...
-      // const width = this.mount.clientWidth;
-      // const height = this.mount.clientHeight;
+    // get container dimensions and use them for scene sizing
+    // !VA Branch: 022221
+    // !VA Overriding...
+    // const width = this.mount.clientWidth;
+    // const height = this.mount.clientHeight;
 
-      this.scene = new THREE.Scene();
-      const fov = 45;
-      // const aspect = width/height;
-      const aspect = 1.5;
-      const near = 0.1;
-      const far = 1000;
-      this.camera = new THREE.PerspectiveCamera( fov, aspect, near, far);
-      this.controls = new OrbitControls( this.camera, this.mount);
-      // !VA Branch: 022121 Initializing here for now, these controls should be in the Model component
-      // !VA Set the camera.position and controls.target relative to the bounding box values. For now, the camera position is set to be 3X as far away as the dimension of the bounding box except for the z axis, which is 10 times away, since the max-z is now only 12.5 since I rotated the native model orientation. We need a better formula for that. controls.target points the camera at the 3D position, in this case, halfway up the height of the STL model.
-      this.camera.position.set(10 * 3, 10 * 3, 10 * 10); 
-      this.controls.target = new THREE.Vector3(0, 0, 0);
-      // !VA controls.update() appears to set the camera position to the controls.target
-      this.controls.update();
-      // this.controls.target = ( 0, 44, 0);
-      this.renderer = new THREE.WebGLRenderer();
-      // !VA Branch: 02222
-      // !VA Overriding...
-      // this.renderer.setSize( width, height );
-      this.mount.appendChild( this.renderer.domElement ); // mount using React ref
-      // !VA Set the child of the mounted 
-      canvas = this.mount.children[0];
-      // !VA Add the class canv1 to the child the this.mount element.
-      canvas.classList.add('ui');
-      canvas.classList.add('canv1');
-      return [this.scene, this.camera, this.controls];
+    this.scene = new THREE.Scene();
+    const fov = 45;
+    // const aspect = width/height;
+    const aspect = 1.5;
+    const near = 0.1;
+    const far = 1000;
+    this.camera = new THREE.PerspectiveCamera( fov, aspect, near, far);
+    this.controls = new OrbitControls( this.camera, this.mount);
+    // !VA Branch: 022121 Initializing here for now, these controls should be in the Model component
+    // !VA Set the camera.position and controls.target relative to the bounding box values. For now, the camera position is set to be 3X as far away as the dimension of the bounding box except for the z axis, which is 10 times away, since the max-z is now only 12.5 since I rotated the native model orientation. We need a better formula for that. controls.target points the camera at the 3D position, in this case, halfway up the height of the STL model.
+    this.camera.position.set(10 * 3, 10 * 3, 10 * 10); 
+    this.controls.target = new THREE.Vector3(0, 0, 0);
+    // !VA controls.update() appears to set the camera position to the controls.target
+    this.controls.update();
+    // this.controls.target = ( 0, 44, 0);
+    this.renderer = new THREE.WebGLRenderer();
+    // !VA Branch: 02222
+    // !VA Overriding...
+    // this.renderer.setSize( width, height );
+    this.mount.appendChild( this.renderer.domElement ); // mount using React ref
+    // !VA Set the child of the mounted 
+    canvas = this.mount.children[0];
+    // !VA Add the class canv1 to the child the this.mount element.
+    canvas.classList.add('ui');
+    canvas.classList.add('canv1');
+    return [this.scene, this.camera, this.controls];
   };
 
 
-  addSTLObject = () => {
-    console.log('this.props.model :>> ');
-    console.log(this.props.model);
+  addSTLObject = (scene) => {
+    console.log('scene :>> ');
+    console.log(scene);
     const loader = new STLLoader();
     const promise = loader.loadAsync(this.props.model);
     console.log('promise :>> ');
@@ -132,8 +150,8 @@ class Scene extends Component {
       stl.castShadow = true;
       stl.receiveShadow = true;
       // !VA If the Model component doesn't get the scene from the Scene component, the rest will fail silently, so add the error condition. This should be a try/catch. 
-      if (this.scene) {
-        this.scene.add(stl);
+      if (scene) {
+        scene.add(stl);
       } else {
         console.log('Scene does not exist');
       }
@@ -151,27 +169,31 @@ class Scene extends Component {
       sphere.name = 'Sphere';
       // !VA Set the sphere, as with the STL mesh, half the height of the STL mesh vertically off the grid
       sphere.position.y = stlbox.max.y;
-      this.scene.add(sphere);
+      scene.add(sphere);
+
+
+
       // !VA Run zoomExtents to position the camera based on the STL model's bounding sphere
-      // zoomExtents(this.camera, sphere, this.controls, stlbox );
+      zoomExtents(this.camera, sphere, this.controls, stlbox );
+
+
+
+
     }).catch(err => { console.log(' STL file not loaded!');});
     
-    function failureCallback(){
-      console.log('Could not load STL file!');
-    }
+    // function failureCallback(){
+    //   console.log('Could not load STL file!');
+    // }
 
     
     function zoomExtents( camera, sphere, controls, stlbox ) {
       console.log('zoomExtents running');
-      console.log('camera :>> ');
-      console.log(camera);
 
       // !VA These are the calcs provided by Alex Khoroshylov
       let vFoV = camera.getEffectiveFOV();
       let hFoV = camera.fov * camera.aspect;
       let FoV = Math.min(vFoV, hFoV);
       let FoV2 = FoV / 2;
-
       let dir = new THREE.Vector3();
       camera.getWorldDirection(dir);
       let cameraDir = new THREE.Vector3();
@@ -181,15 +203,15 @@ class Scene extends Component {
       let bsWorld = bs.center.clone();
       
       sphere.localToWorld(bsWorld);
-
+      
       let th = FoV2 * Math.PI / 180.0;
       let sina = Math.sin(th);
       let R = bs.radius;
       let FL = R / sina;
-
+      
       let cameraOffs = cameraDir.clone();
       cameraOffs.multiplyScalar(-FL);
-
+      
       // !VA Add the height of the STL mesh to the camera's Z offset to draw the camera back a tad.
       cameraOffs.z = cameraOffs.z + stlbox.max.y;
       // !VA Set the camera position to the offset position above.
@@ -202,11 +224,11 @@ class Scene extends Component {
       camera.lookAt(bsWorld);
       // !VA Copy the lookAt coordinates above to the Orbit controls target so both the camera and the orbit controls are looking at the same point. 
       controls.target.copy(bsWorld);
-      // !VA Update the orbit and camera controls.
-      controls.target.update();
-      camera.position.update();
-    }
+      controls.update();
 
+    }
+    //  return baz;
+    // this.showStatus();
   }
 
 
@@ -216,7 +238,7 @@ class Scene extends Component {
   // Here should come custom code.
   // Code below is taken from Three.js BoxGeometry example
   // https://threejs.org/docs/#api/en/geometries/BoxGeometry
-  addCustomSceneObjects = () => {
+  addCustomSceneObjects = (scene ) => {
     // const geometry = new THREE.BoxGeometry(2, 2, 2);
     // const material = new THREE.MeshPhongMaterial( {
     //     color: 0x156289,
@@ -236,33 +258,57 @@ class Scene extends Component {
     lights[ 1 ].position.set( 100, 200, 100 );
     lights[ 2 ].position.set( - 100, - 200, - 100 );
 
-    this.scene.add( lights[ 0 ] );
-    this.scene.add( lights[ 1 ] );
-    this.scene.add( lights[ 2 ] );
+    scene.add( lights[ 0 ] );
+    scene.add( lights[ 1 ] );
+    scene.add( lights[ 2 ] );
     // !VA 
     const light = new THREE.AmbientLight( 0x404040 ); // soft white light
-    this.scene.add( light );
+    scene.add( light );
     // !VA Added scene background
-    this.scene.background = new THREE.Color('grey');
+    scene.background = new THREE.Color('grey');
     {
       const gridHelper = new THREE.GridHelper( 1000, 40, 0xfeffce, 0xFFFFFF );
       gridHelper.position.y = 0;
       gridHelper.position.x = 0;
-      this.scene.add( gridHelper );
+      scene.add( gridHelper );
     }
 
     {
       const color = 'grey';  // white
       const near = 10;
       const far = 500;
-      this.scene.fog = new THREE.Fog(color, near, far);
+      scene.fog = new THREE.Fog(color, near, far);
     }
   };
+
+
+  showStatus = async () => {
+    const result = await this.addSTLObject(this.scene);
+    console.log('showStatus running');
+    console.log('result :>> ');
+    console.log(result);
+      console.log('this.scene :>> ');
+      console.log(this.scene);
+      foo = this.scene.children.map( item  => item.type);
+      console.log('foo :>> ');
+      console.dir(foo);
+    
+  }
+
+  // showStatus = () => {
+  //   console.log('Showing status of objects:');
+  //   console.log('this.scene :>> ');
+  //   console.log(this.scene);
+  //   foo = this.scene.children.map( item  => item.type);
+  //   console.log('foo :>> ');
+  //   console.dir(foo);
+  // }
 
   startAnimationLoop = () => {
       // !VA Pertains to the deleted cube 
       // this.cube.rotation.x += 0.01;
       // this.cube.rotation.y += 0.01;
+
 
 
       this.renderer.render( this.scene, this.camera );
@@ -297,6 +343,7 @@ class Scene extends Component {
       //   let foo = this.mount.children[0];
       //   foo.classList.add('canv1');
       // }
+      
       return (
         <>
           {/* <Model scene={this.state.scene} camera={this.state.camera} controls={this.state.controls} model={this.state.model} /> */}
