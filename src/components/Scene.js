@@ -10,19 +10,24 @@ import Model from './Model';
 // !VA Using this example: https://codesandbox.io/s/github/supromikali/react-three-demo?file=/src/index.js:0-4455
 
 // !VA Set the width/height to 16:9
-const height = 500;
-const width = height * 1.77;
+// const height = 500;
+// const width = height * 1.77;
 
-const style = {
-  height: height, // we can control scene size by setting container dimensions
-  width: width 
-};
+
+// !VA Branch: 022221
+// !VA Trying to get rid of the style on the parent div
+// const style = {
+//   height: height, // we can control scene size by setting container dimensions
+//   width: width 
+// };
 
 
 // !VA Convert degrees to radians
 // const deg2rad = (deg) => deg * (Math.PI/180);
 let bbox;
 let scene;
+let canvas;
+let stl;
 
 
 class Scene extends Component {
@@ -30,17 +35,27 @@ class Scene extends Component {
 
 
   // !VA Originally in the Container component, pertains to the Unmount button
-  state = {isMounted: true, scene: null, camera: null, controls: null, model: '' };
+  state = {isMounted: true, scene: null, camera: null, controls: null, model: 'init' };
 
   componentDidMount() {
       // this.addSTLObject();
       // !VA Get the scene and controls from sceneSetup and destructure
       const [ scene, camera, controls ] = this.sceneSetup();
-      // this.scene = scene;
-      this.setState({scene: scene, camera: camera, controls: controls, model: this.props.model})
+      this.setState({scene: scene, camera: camera, controls: controls, model: this.props.model })
       this.addCustomSceneObjects();
       this.startAnimationLoop();
       window.addEventListener('resize', this.handleWindowResize);
+      console.log('componentDidMount running');
+
+      console.log('this.scene.children :>> ');
+      console.log(this.scene.children);
+      let cldrn = this.scene.children;
+      console.log('cldrn.length :>> ' + cldrn.length);
+      for (let i = 0; i < cldrn.length; i++) {
+        console.log('cldrn[i] :>> ');
+        console.log(cldrn[i]);
+      }
+
   }
 
   componentWillUnmount() {
@@ -55,11 +70,15 @@ class Scene extends Component {
   // https://threejs.org/docs/#manual/en/introduction/Creating-a-scene
   sceneSetup = () => {
       // get container dimensions and use them for scene sizing
-      const width = this.mount.clientWidth;
-      const height = this.mount.clientHeight;
+      // !VA Branch: 022221
+      // !VA Overriding...
+      // const width = this.mount.clientWidth;
+      // const height = this.mount.clientHeight;
+
       this.scene = new THREE.Scene();
       const fov = 45;
-      const aspect = width/height;
+      // const aspect = width/height;
+      const aspect = 1.5;
       const near = 0.1;
       const far = 1000;
       this.camera = new THREE.PerspectiveCamera( fov, aspect, near, far);
@@ -72,8 +91,15 @@ class Scene extends Component {
       this.controls.update();
       // this.controls.target = ( 0, 44, 0);
       this.renderer = new THREE.WebGLRenderer();
-      this.renderer.setSize( width, height );
+      // !VA Branch: 02222
+      // !VA Overriding...
+      // this.renderer.setSize( width, height );
       this.mount.appendChild( this.renderer.domElement ); // mount using React ref
+      // !VA Set the child of the mounted 
+      canvas = this.mount.children[0];
+      // !VA Add the class canv1 to the child the this.mount element.
+      canvas.classList.add('ui');
+      canvas.classList.add('canv1');
       return [this.scene, this.camera, this.controls];
   };
 
@@ -128,6 +154,7 @@ class Scene extends Component {
       // this.cube.rotation.x += 0.01;
       // this.cube.rotation.y += 0.01;
 
+
       this.renderer.render( this.scene, this.camera );
 
       // The window.requestAnimationFrame() method tells the browser that you wish to perform
@@ -139,6 +166,10 @@ class Scene extends Component {
   handleWindowResize = () => {
       const width = this.mount.clientWidth;
       const height = this.mount.clientHeight;
+      // console.log('width :>> ');
+      // console.log(width);
+      // console.log('height :>> ');
+      // console.log(height);
 
       this.renderer.setSize( width, height );
       this.camera.aspect = width / height;
@@ -148,18 +179,24 @@ class Scene extends Component {
       this.camera.updateProjectionMatrix();
   };
 
+
+  
   render() {
-
+      // !VA  This is NOT the way it's supposed to be done, I'm sure. 
+      // if(this.mount) {
+      //   let foo = this.mount.children[0];
+      //   foo.classList.add('canv1');
+      // }
       return (
-
-        <div>
+        <>
           <Model scene={this.state.scene} camera={this.state.camera} controls={this.state.controls} model={this.state.model} />
-          <div 
-            style={style} 
+          <div className="model"
+            // !VA Branch: 022221 
+            // style={style} 
             ref={ref => (this.mount = ref)}
             >
           </div>
-        </div>
+        </>
       );
   }
 }

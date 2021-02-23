@@ -8,7 +8,8 @@
 
 /* <div className="ui segment" style={{width: '950px', display: 'flex', flexDirection: 'rows', justifyContent: 'center'}}> */
 .card {
-  width: 930px !important;
+  /* Remove this to set the canvas to render to default of 300x150 */
+  width: 760px !important;
   padding: 20px !important;
 }
 
@@ -20,3 +21,23 @@
   border: 0 !important;
   padding: 0 !important;
 }
+
+.model {
+  width: 720px !important;
+  height: 480px !important;
+  display: block;
+}
+
+.canv1 {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+
+/* @media only screen and (max-width: 600px) {
+  .canv1 {
+    height: auto !important;
+    width: 560px !important;
+  }
+} */
+

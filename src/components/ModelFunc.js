@@ -1,27 +1,29 @@
-import React, { Component } from 'react';
+import React, { Component } from "react";
 import * as THREE from 'three';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
-
-class Model extends Component {
-
-
-
-  render() {
+// import Model1 from '../assets/model1.stl';
+// import {OrbitControls} from "three/examples/jsm/controls/OrbitControls";
+// import Scene from './Scene';
 
 
+// !VA This uses the React rendering example at https://codesandbox.io/s/github/supromikali/react-three-demo?file=/src/index.js:0-4455 to get the STL rendered, with mods I made to replace the basic Box in the example with the STL. For the camera positioning, I used Alex Khoroshylov's example here https://stackoverflow.com/questions/14614252/how-to-fit-camera-to-object/14614736#14614736 and the working demo here https://jsfiddle.net/mmalex/h7wzvbkt/ to set the initial camera position based on the boundingSphere of the model and the height of the STL mesh. NOTE: All of the provided code is required for it to work as expected, I removed all the extraneous lines.
+const Model = (props) => {
+
+  
 
   // !VA Get the THREE scene objects which are set to state in the Scene component
+  const scene = props.scene;
+  const controls = props.controls;
+  const camera = props.camera;
+  const model = props.model;
 
-  const scene = this.props.scene;
-  const controls = this.props.controls;
-  const camera = this.props.camera;
-  const model = this.props.model;
   
   // !VA The render method in the Scene component runs twice (once at state initialization and once in componentDidMount ). The first time, this.state.model is an empty string because that is the initialization pass. So only run addSTLObject on the second run, i.e. if props.model is not an empty string.
-  this.props.model !== 'init' ? addSTLObject() : console.log('init');
+  if (props.model !== '') { addSTLObject();};
 
-  function onModelLoaded () {
-    console.log('model loaded');
+  function onModelLoad() {
+    console.log(`STL model ${model} loaded.`);
+    // props.loadedModel(model);
   }
 
   // !VA The STL object loads, but still outputs the error message, I haven't figured out why. There is probably something wrong with the function structure so that the catch is called as a parameter, not as a callback. Need to look into that soon.
@@ -32,13 +34,15 @@ class Model extends Component {
     console.log(promise);
     promise.then( ( geometry ) => 
     {
-      onModelLoaded();
+
+      onModelLoad(model);
+      console.log('geometry :>> ');
+      console.log(geometry);
 
       const stlmaterial = new THREE.MeshPhongMaterial( { color: 0x007fff, specular: 0x111111, shininess: 100, fog: false } );
       const stl = new THREE.Mesh( geometry, stlmaterial );
 
-      stl.name = 'STL';
-      console.log('stl.name :>> ' + stl.name);
+
       // !VA Center the stl geometry in the scene. Required.
       geometry.center();
       // !VA Get the STL model's bounding box. Required for positioning it in 3D space. 
@@ -81,11 +85,15 @@ class Model extends Component {
       // !VA Run zoomExtents to position the camera based on the STL model's bounding sphere
       zoomExtents(camera, sphere, controls, stlbox);
 
-    }).catch(err => failureCallback());
+    }).catch(err => { 
+      
+      console.log('STL file could not be loaded');
     
-    function failureCallback(){
-      console.log('Could not load STL file!');
-    }
+    });
+    
+    // function failureCallback(){
+    //   console.log('Could not load STL file!');
+    // }
   }
 
 
@@ -134,22 +142,12 @@ class Model extends Component {
     camera.position.update();
   }
 
-
-
-
-
-
-
-
-
-
-
-    return (
+  return (
     // !VA NOTE: The Model component doesn't output any JSX. What is its function actually? For now, I'm going to leave it there and just output an empty Fragment, but it might be better just to include it in another component.  
     <>
     </>
-    );
-  }
-}
+  );
+
+};
 
 export default Model;
