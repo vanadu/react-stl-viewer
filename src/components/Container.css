@@ -28,6 +28,11 @@
   display: block;
 }
 
+/* .test {
+  width: 300px !important;
+  height: 200px !important;
+} */
+
 .canv1 {
   width: 100% !important;
   height: 100% !important;

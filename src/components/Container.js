@@ -9,9 +9,9 @@ import Model3 from '../assets/model3.stl';
 // !VA Using this example: https://codesandbox.io/s/github/supromikali/react-three-demo?file=/src/index.js:0-4455
 
 const contents = [
-  { id: 1, title: 'Mic Clip', model: Model1}
-  // { id: 2, title: 'Mixer Stand', model: Model2},
-  // { id: 3, title: 'Computer Riser', model: Model3}
+  { id: 1, title: 'Mic Clip', model: Model1},
+  { id: 2, title: 'Mixer Stand', model: Model2},
+  { id: 3, title: 'Computer Riser', model: Model3}
 ];
 
 

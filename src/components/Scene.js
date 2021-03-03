@@ -10,12 +10,14 @@ import Model from './Model';
 // !VA Using this example: https://codesandbox.io/s/github/supromikali/react-three-demo?file=/src/index.js:0-4455
 
 // !VA Set the width/height to 16:9
-// const height = 500;
-// const width = height * 1.77;
+const height = 480;
+const width = 720;
 
 
 // !VA Branch: 022221
 // !VA Trying to get rid of the style on the parent div
+// !VA Branch: 022421
+// !VA Was hoping this would fix the blockiness, but it didn't. Style is set in the CSS, so adding style here does nothing.
 // const style = {
 //   height: height, // we can control scene size by setting container dimensions
 //   width: width 
@@ -24,8 +26,6 @@ import Model from './Model';
 
 // !VA Convert degrees to radians
 // const deg2rad = (deg) => deg * (Math.PI/180);
-let bbox;
-let scene;
 let canvas;
 
 
@@ -38,18 +38,21 @@ class Scene extends Component {
   state = {isMounted: true };
   
   componentDidMount() {
-    // this.addSTLObject();
+    /* !VA  
+    * get the STL model geometry using async/await
+    
+    */
+
+    this.addSTLObject();
     // !VA Get the scene and controls from sceneSetup and destructure
     this.sceneSetup();
-    // !VA The commented lines below were required for the separate Model component
-    // const [ scene, camera, controls ] = this.sceneSetup();
-    // this.setState({scene: scene, camera: camera, controls: controls, model: this.props.model });
-    // this.setState({scene: scene, camera: camera, controls: controls });
-    this.addSTLObject();
-    this.addCustomSceneObjects();
-    this.startAnimationLoop();
-    window.addEventListener('resize', this.handleWindowResize);
-
+      // !VA The commented lines below were required for the separate Model component. Now that the model is integrated into the Scene component, there's not reason to set state to any of the scene properties.
+      // const [ scene, camera, controls ] = this.sceneSetup();
+      // this.setState({scene: scene, camera: camera, controls: controls, model: this.props.model });
+      // this.setState({scene: scene, camera: camera, controls: controls });
+      this.addCustomSceneObjects();
+      this.startAnimationLoop();
+      window.addEventListener('resize', this.handleWindowResize);
   }
 
   componentWillUnmount() {
@@ -63,9 +66,7 @@ class Scene extends Component {
   // Standard scene setup in Three.js. Check "Creating a scene" manual for more information
   // https://threejs.org/docs/#manual/en/introduction/Creating-a-scene
   sceneSetup = () => {
-      // get container dimensions and use them for scene sizing
-      // !VA Branch: 022221
-      // !VA Overriding...
+      // !VA Overriding, container set in CSS
       // const width = this.mount.clientWidth;
       // const height = this.mount.clientHeight;
 
@@ -82,15 +83,20 @@ class Scene extends Component {
       this.camera.position.set(10 * 3, 10 * 3, 10 * 10); 
       this.controls.target = new THREE.Vector3(0, 0, 0);
       // !VA controls.update() appears to set the camera position to the controls.target
+
       this.controls.update();
       // this.controls.target = ( 0, 44, 0);
       this.renderer = new THREE.WebGLRenderer();
       // !VA Branch: 02222
       // !VA Overriding...
-      // this.renderer.setSize( width, height );
+      // !VA setSize is initialized here and called again whenever the window size changes in handleWindowResize
+      this.renderer.setSize( width, height );
       this.mount.appendChild( this.renderer.domElement ); // mount using React ref
-      // !VA Set the child of the mounted 
+      // !VA this.mount draws the canvas, so set variable to refer to it as such
       canvas = this.mount.children[0];
+
+      
+
       // !VA Add the class canv1 to the child the this.mount element.
       canvas.classList.add('ui');
       canvas.classList.add('canv1');
@@ -109,44 +115,44 @@ class Scene extends Component {
     {
 
       const stlmaterial = new THREE.MeshPhongMaterial( { color: 0x007fff, specular: 0x111111, shininess: 100, fog: false } );
-      const stl = new THREE.Mesh( geometry, stlmaterial );
+      this.stl = new THREE.Mesh( geometry, stlmaterial );
 
-      stl.name = 'STL';
-      console.log('stl.name :>> ' + stl.name);
+      this.stl.name = 'STL';
+      console.log('stl.name :>> ' + this.stl.name);
       // !VA Center the stl geometry in the scene. Required.
       geometry.center();
       // !VA Get the STL model's bounding box. Required for positioning it in 3D space. 
-      stl.geometry.computeBoundingBox();
+      this.stl.geometry.computeBoundingBox();
       // !VA Get the STL model's boundingSphere. Required for sizing the Sphere object used for calculating the initial camera position. 
-      stl.geometry.computeBoundingSphere();
+      this.stl.geometry.computeBoundingSphere();
       // !VA get the bounding box of the stl mesh
-      let stlbox = stl.geometry.boundingBox;
+      let stlbox = this.stl.geometry.boundingBox;
       // !VA Set the initial position of the stl mesh to set its Y position to half its height. This sets its lowest point on the grid plane.
-      stl.position.set( 0, stlbox.max.y, 0 );
+      this.stl.position.set( 0, stlbox.max.y, 0 );
 
       // // !VA This is where we used to set the camera position. That has been replaced by the zoomExtents function, but I'm leaving the original code commented here for posterity.
       // camera.position.set(stlbox.max.x * 3, stlbox.max.y * 3, stlbox.max.z * 10); 
       // controls.target = new THREE.Vector3(0, stlbox.max.y, 0);
       // controls.update();
       // !VA Put a shadow on the STL model
-      stl.castShadow = true;
-      stl.receiveShadow = true;
+      this.stl.castShadow = true;
+      this.stl.receiveShadow = true;
       // !VA If the Model component doesn't get the scene from the Scene component, the rest will fail silently, so add the error condition. This should be a try/catch. 
       if (this.scene) {
-        this.scene.add(stl);
+        this.scene.add(this.stl);
       } else {
         console.log('Scene does not exist');
       }
 
       // !VA Add a bounding sphere around the STL model to use with zoomExtents. The sphere and its material (otherwise it appears with the default opaque material) are required, but set the opacity to 0 to hide it.
 
-      var geometry2 = new THREE.SphereGeometry(stl.geometry.boundingSphere.radius, 32, 32);
+      var geometry2 = new THREE.SphereGeometry(this.stl.geometry.boundingSphere.radius, 32, 32);
       var spherematerial = new THREE.MeshBasicMaterial({
         color: 0xffff00
       });
       spherematerial.transparent = true;
       spherematerial.opacity = 0;
-      spherematerial.opacity = 0.35;
+      // spherematerial.opacity = 0.35;
       var sphere = new THREE.Mesh(geometry2, spherematerial);
       sphere.name = 'Sphere';
       // !VA Set the sphere, as with the STL mesh, half the height of the STL mesh vertically off the grid
@@ -154,6 +160,7 @@ class Scene extends Component {
       this.scene.add(sphere);
       // !VA Run zoomExtents to position the camera based on the STL model's bounding sphere
       zoomExtents(this.camera, sphere, this.controls, stlbox );
+
     }).catch(err => { console.log(' STL file not loaded!');});
     
     function failureCallback(){
@@ -196,16 +203,18 @@ class Scene extends Component {
       let newCameraPos = bsWorld.clone().add(cameraOffs);
       // !VA Set the camera position
       camera.position.copy(newCameraPos);
+      camera.position.y = stlbox.max.y * 2
       // !VA Move the world coordinates of the boundingSphere up accordingly. These will be the coordinates passed to lookAt to make sure the initial camera view angle matches the orbit target.
       bsWorld.y = stlbox.max.y;
       // !VA Set the camera lookAt to the boundingSphere world coordinates above
       camera.lookAt(bsWorld);
       // !VA Copy the lookAt coordinates above to the Orbit controls target so both the camera and the orbit controls are looking at the same point. 
       controls.target.copy(bsWorld);
+
       controls.update();
-
+      console.log('zoomExtents complete');
       // !VA Update the orbit and camera controls.
-
+      return this.stl;
     }
 
   }
@@ -261,26 +270,22 @@ class Scene extends Component {
   };
 
   startAnimationLoop = () => {
-      // !VA Pertains to the deleted cube 
-      // this.cube.rotation.x += 0.01;
-      // this.cube.rotation.y += 0.01;
-
-
+    
+      // !VA autoRotate and damping speed and factor
+      this.controls.autoRotate = true;
+      this.controls.autoRotateSpeed = 1;
+      this.controls.enableDamping = true; // an animation loop is required when either damping or auto-rotation are enabled
+      this.controls.dampingFactor = 0.1;
+      this.controls.update();
+      // !VA Render
       this.renderer.render( this.scene, this.camera );
-
-      // The window.requestAnimationFrame() method tells the browser that you wish to perform
-      // an animation and requests that the browser call a specified function
-      // to update an animation before the next repaint
+      // !VA window.requestAnimationFrame() method tells the browser that you wish to perform an animation and requests that the browser call a specified function to update an animation before the next repaint
       this.requestID = window.requestAnimationFrame(this.startAnimationLoop);
   };
 
   handleWindowResize = () => {
-      const width = this.mount.clientWidth;
-      const height = this.mount.clientHeight;
-      // console.log('width :>> ');
-      // console.log(width);
-      // console.log('height :>> ');
-      // console.log(height);
+      const width = canvas.clientWidth;
+      const height = canvas.clientHeight;
 
       this.renderer.setSize( width, height );
       this.camera.aspect = width / height;
@@ -293,15 +298,9 @@ class Scene extends Component {
 
   
   render() {
-      // !VA  This is NOT the way it's supposed to be done, I'm sure. 
-      // if(this.mount) {
-      //   let foo = this.mount.children[0];
-      //   foo.classList.add('canv1');
-      // }
       return (
         <>
-          {/* <Model scene={this.state.scene} camera={this.state.camera} controls={this.state.controls} model={this.state.model} /> */}
-          <div className="model"
+          <div className="test"
             // !VA Branch: 022221 
             // style={style} 
             ref={ref => (this.mount = ref)}
