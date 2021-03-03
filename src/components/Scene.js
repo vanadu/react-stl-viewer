@@ -35,7 +35,9 @@ class Scene extends Component {
 
   // !VA Originally in the Container component, pertains to the Unmount button
   // state = {isMounted: true, scene: null, camera: null, controls: null, model: 'init', stl: null };
-  state = {isMounted: true };
+
+  // !VA Date: 030321 Added state property and initialized
+  state = {isMounted: true, isLoaded: false };
   
   componentDidMount() {
     /* !VA  
@@ -45,6 +47,11 @@ class Scene extends Component {
 
     this.addSTLObject();
     // !VA Get the scene and controls from sceneSetup and destructure
+
+  }
+
+  componentDidUpdate() {
+
     this.sceneSetup();
       // !VA The commented lines below were required for the separate Model component. Now that the model is integrated into the Scene component, there's not reason to set state to any of the scene properties.
       // const [ scene, camera, controls ] = this.sceneSetup();
@@ -160,6 +167,9 @@ class Scene extends Component {
       this.scene.add(sphere);
       // !VA Run zoomExtents to position the camera based on the STL model's bounding sphere
       zoomExtents(this.camera, sphere, this.controls, stlbox );
+
+      this.setState({ isLoaded: true });
+
 
     }).catch(err => { console.log(' STL file not loaded!');});
     
