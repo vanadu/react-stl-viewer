@@ -43,20 +43,38 @@ class Scene extends Component {
     // !VA Initialize scene and add stl geometry which is called at the tail with intializeSTL
     this.initializeScene();
 
-    setTimeout(() => {
+    console.log('this.state.isLoaded :>> ');
+    console.log(this.state.isLoaded);
+
       
-      this.sceneSetup(this.scene);
+      // this.sceneSetup(this.scene);
 
-      this.addCustomSceneObjects();
+      // this.addCustomSceneObjects();
 
-      this.startAnimationLoop();
-      window.addEventListener('resize', this.handleWindowResize);
-
-
-
-    }, 300);
+      // this.startAnimationLoop();
+      // window.addEventListener('resize', this.handleWindowResize);
 
 
+
+    // }, 300);
+  }
+
+  // !VA WORKS!!!
+  componentDidUpdate() {
+
+
+
+    console.log('this.state.isLoaded :>> ');
+    console.log(this.state.isLoaded);
+
+
+    this.sceneSetup(this.scene);
+
+    this.addCustomSceneObjects();
+
+    this.startAnimationLoop();
+    window.addEventListener('resize', this.handleWindowResize);
+  
 
 
 
@@ -76,7 +94,8 @@ class Scene extends Component {
     const promise = loader.loadAsync(this.props.model);
     promise.then( ( geometry ) => 
     {
-
+      console.log('promise :>> ');
+      console.log(promise);
       const stlmaterial = new THREE.MeshPhongMaterial( { color: 0x007fff, specular: 0x111111, shininess: 100, fog: false } );
       const stl = new THREE.Mesh( geometry, stlmaterial );
 
@@ -97,6 +116,8 @@ class Scene extends Component {
       this.setState({ isLoaded: true})
       console.log('this.state :>> ');
       console.log(this.state);
+      console.log('stl :>> ');
+      console.log(stl);
       
     }).catch(err => { console.log(' STL file not loaded!');});
 
